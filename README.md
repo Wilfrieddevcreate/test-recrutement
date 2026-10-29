@@ -7,16 +7,31 @@ Parcours parent : **matière + niveau + disponibilités → tuteurs classés par
 | Composant | Technologie |
 |---|---|
 | Frontend | React 19 + Vite + Tailwind CSS v4 |
-| Backend | Laravel 13 (PHP 8.3+), API REST JSON |
-| Base de données | PostgreSQL 16 (Docker Compose) |
+| Backend | Laravel 13 (PHP 8.4), API REST JSON |
+| Base de données | PostgreSQL 16 |
+| Lancement | Docker Compose (pile complète) ou natif |
 
 ## Installation et lancement
 
-Prérequis : PHP ≥ 8.3 avec `pdo_pgsql`, Composer, Node ≥ 20, Docker.
+### Option 1 : tout en Docker (recommandé pour tester)
+
+Prérequis : Docker avec Compose. Aucune installation de PHP ni de Node.
+
+```bash
+docker compose up --build
+```
+
+Puis ouvrir **http://localhost:5173**. Au premier démarrage, l'API applique les migrations et charge le jeu de données (13 tuteurs, créneaux sur 14 jours). Les ports sont modifiables si besoin : `API_PORT=8080 WEB_PORT=3000 docker compose up`.
+
+Pour repartir d'une base vierge : `docker compose down -v`.
+
+### Option 2 : en local
+
+Prérequis : PHP ≥ 8.4 avec `pdo_pgsql` (le `composer.lock` est résolu pour PHP 8.4), Composer, Node ≥ 20, Docker (pour PostgreSQL uniquement).
 
 ```bash
 # 1. Base de données (PostgreSQL sur le port 5434)
-docker compose up -d
+docker compose up -d db
 
 # 2. API Laravel — http://localhost:8000
 cd backend
@@ -33,7 +48,7 @@ npm install
 npm run dev
 ```
 
-Ouvrir **http://localhost:5173**. En développement, Vite relaie `/api` vers Laravel (aucune configuration CORS ni variable d'environnement nécessaire). Pour un déploiement séparé, définir `VITE_API_URL`.
+En développement comme dans Docker, le serveur Vite relaie `/api` vers Laravel : pas de CORS ni de variable d'environnement côté navigateur. Pour un déploiement séparé, définir `VITE_API_URL`.
 
 Tests backend (SQLite en mémoire, aucune base à préparer) :
 
@@ -98,7 +113,7 @@ Les dates sont renvoyées en ISO 8601 avec le fuseau Europe/Paris, accompagnées
 backend/   API Laravel : app/Services/TutorMatcher.php (matching), app/Http/Controllers/Api,
            database/seeders (13 tuteurs), tests (16 tests : matching, réservation, scoring, seeder)
 frontend/  SPA React : src/components/{search,results,booking,ui,layout}, src/api/client.js
-docker-compose.yml   PostgreSQL 16
+docker-compose.yml   pile complète (PostgreSQL 16, API, frontend) ; Dockerfile dans backend/ et frontend/
 ```
 
 ## Périmètre et évolutions possibles

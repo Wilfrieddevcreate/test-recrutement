@@ -1,14 +1,16 @@
+# Pile complète de démonstration : `docker compose up --build` puis http://localhost:5173
+# Pour un lancement natif (PHP/Node installés), ne démarrer que la base : `docker compose up -d db`
+# Les ports exposés sont modifiables : DB_PORT, API_PORT, WEB_PORT.
+
 services:
   db:
     image: postgres:16-alpine
-    container_name: tutoring_db
-    restart: unless-stopped
     environment:
       POSTGRES_DB: tutoring
       POSTGRES_USER: tutoring
       POSTGRES_PASSWORD: tutoring
     ports:
-      - "5434:5432"
+      - "${DB_PORT:-5434}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,6 +18,39 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build: ./backend
+    environment:
+      APP_NAME: "Tutoring Match"
+      APP_ENV: local
+      APP_DEBUG: "false"
+      APP_KEY: "base64:0lTvzB7MLMKhsMAIy6XnmsAAdpdaFxD6lBRwl1Hh47A="
+      APP_URL: http://localhost:${API_PORT:-8000}
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: tutoring
+      DB_USERNAME: tutoring
+      DB_PASSWORD: tutoring
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    depends_on:
+      - api
 
 volumes:
   db_data:

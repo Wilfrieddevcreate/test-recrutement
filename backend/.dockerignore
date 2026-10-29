@@ -1,0 +1,10 @@
+vendor
+node_modules
+.env
+.env.*
+!.env.example
+storage/logs/*
+tests
+.git
+Dockerfile
+.dockerignore
