@@ -1,30 +1,105 @@
 # Tutoring Match
 
-Prototype de matching intelligent entre élèves et tuteurs, avec réservation automatique d'un créneau.
+Prototype de matching intelligent entre élèves et tuteurs, avec réservation automatique d'un créneau, sans intervention humaine.
 
-- `backend/` : API REST Laravel 13 + PostgreSQL
-- `frontend/` : interface React + Vite + Tailwind CSS
-- `docker-compose.yml` : base PostgreSQL 16
+Parcours parent : **matière + niveau + disponibilités → tuteurs classés par pertinence → réservation d'un créneau → confirmation immédiate.**
 
-## Démarrage rapide
+| Composant | Technologie |
+|---|---|
+| Frontend | React 19 + Vite + Tailwind CSS v4 |
+| Backend | Laravel 13 (PHP 8.3+), API REST JSON |
+| Base de données | PostgreSQL 16 (Docker Compose) |
+
+## Installation et lancement
+
+Prérequis : PHP ≥ 8.3 avec `pdo_pgsql`, Composer, Node ≥ 20, Docker.
 
 ```bash
-# 1. Base de données
+# 1. Base de données (PostgreSQL sur le port 5434)
 docker compose up -d
 
-# 2. Backend (port 8000)
+# 2. API Laravel — http://localhost:8000
 cd backend
 composer install
-cp .env.example .env && php artisan key:generate
-php artisan migrate --seed
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed        # schéma + 13 tuteurs fictifs avec créneaux sur 14 jours
 php artisan serve
 
-# 3. Frontend (port 5173)
-cd frontend
+# 3. Interface — http://localhost:5173
+cd ../frontend
 npm install
 npm run dev
 ```
 
-Puis ouvrir http://localhost:5173.
+Ouvrir **http://localhost:5173**. En développement, Vite relaie `/api` vers Laravel (aucune configuration CORS ni variable d'environnement nécessaire). Pour un déploiement séparé, définir `VITE_API_URL`.
 
-_README complet (choix techniques, algorithme de matching) à venir._
+Tests backend (SQLite en mémoire, aucune base à préparer) :
+
+```bash
+cd backend && php artisan test
+```
+
+## Choix techniques
+
+### Modèle de données
+
+- `tutors` : prénom, accroche, présentation, photo, années d'expérience, note moyenne, nombre d'avis, nombre de cours donnés.
+- `subjects`, `levels` (classe + cycle primaire / collège / lycée).
+- `tutor_subject_level` : une ligne = « ce tuteur enseigne cette matière à ce niveau ». Permet un filtrage exact en une jointure et autorise des offres fines (ex. philosophie uniquement en Terminale).
+- `availability_slots` : **créneaux datés d'une heure**, générés à partir d'un rythme hebdomadaire par tuteur. Un créneau concret peut être marqué réservé et disparaît alors des propositions, ce qu'une simple récurrence ne permettrait pas.
+- `bookings` : référence lisible (`TM-XXXXXX`), prénom de l'élève, e-mail du parent, et **contrainte d'unicité sur le créneau** : la base elle-même interdit toute double réservation.
+
+### Algorithme de matching (`app/Services/TutorMatcher.php`)
+
+1. **Filtres obligatoires, éliminatoires** : le tuteur enseigne la matière au niveau demandé (requête SQL) **et** possède au moins un créneau libre à venir dans l'une des demi-journées souhaitées. Un tuteur qui ne remplit pas ces trois conditions n'est jamais classé.
+2. **Classement** des tuteurs retenus par un score de 0 à 100, somme pondérée de critères normalisés :
+
+   | Critère | Poids | Normalisation |
+   |---|---|---|
+   | Créneaux compatibles avec les souhaits du parent | 35 | plafonné à 6 créneaux |
+   | Évaluations des élèves | 30 | note / 5 |
+   | Expérience | 20 | plafonnée à 10 ans |
+   | Cours déjà donnés sur la plateforme | 15 | plafonnés à 300 |
+
+   Les poids et plafonds vivent dans `backend/config/matching.php` : la logique évolue sans toucher au code. Chaque résultat embarque des **atouts explicables** (« Noté 4,8/5 par 102 élèves », « 7 créneaux qui vous conviennent ») affichés sous forme de badges, pour que le parent comprenne le classement.
+
+Le parent exprime ses disponibilités en **demi-journées** (matin 8h–12h, après-midi 12h–18h, soir 18h–21h) par jour de semaine : c'est ainsi qu'une famille raisonne, et le backend fait la correspondance avec les créneaux horaires concrets des 14 prochains jours.
+
+### Réservation
+
+`POST /api/bookings` s'exécute dans une transaction : verrou du créneau (`SELECT … FOR UPDATE`), vérification qu'il est libre et que le tuteur enseigne bien la matière au niveau demandé, puis enregistrement. Si deux familles valident le même créneau, la seconde reçoit un **409** et l'interface lui propose de choisir un autre créneau après rafraîchissement des résultats. Aucune validation administrative.
+
+### Interface
+
+- **Un seul écran, trois temps**, sans rechargement : formulaire → résultats → confirmation, avec un panneau de réservation (modale sur ordinateur, bottom sheet sur mobile).
+- **Le moins de saisie possible** : matière et classe en pastilles, disponibilités dans une grille cliquable (transposée sur mobile pour des cases larges) avec des raccourcis (« Soirs de semaine », « Week-end »). L'identité n'est demandée qu'au moment de réserver : deux champs, mémorisés pour la fois suivante.
+- **Lisibilité des résultats** : meilleur match mis en avant, anneau de pertinence, atouts, créneaux groupés par jour, accès à toutes les disponibilités du tuteur.
+- **Fluidité** : squelettes de chargement, transitions d'apparition, états de bouton, mobile-first sans débordement.
+- **Petit plus** : export iCalendar du cours réservé depuis l'écran de confirmation.
+
+### API
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/api/meta` | Matières, niveaux par cycle, périodes, jours (alimente le formulaire) |
+| GET | `/api/tutors` | Liste des tuteurs |
+| GET | `/api/tutors/{id}/availabilities` | Créneaux encore libres d'un tuteur |
+| POST | `/api/match` | Tuteurs compatibles classés, avec leurs créneaux correspondants |
+| POST | `/api/bookings` | Réservation d'un créneau (201, ou 409 s'il vient d'être pris) |
+| GET | `/api/bookings/{reference}` | Consultation d'une réservation |
+
+Les dates sont renvoyées en ISO 8601 avec le fuseau Europe/Paris, accompagnées de libellés français prêts à afficher.
+
+## Structure du dépôt
+
+```
+backend/   API Laravel : app/Services/TutorMatcher.php (matching), app/Http/Controllers/Api,
+           database/seeders (13 tuteurs), tests/Feature (11 tests)
+frontend/  SPA React : src/components/{search,results,booking,ui,layout}, src/api/client.js
+docker-compose.yml   PostgreSQL 16
+```
+
+## Périmètre et évolutions possibles
+
+Conformément à l'énoncé, l'authentification, le paiement, les e-mails et la visioconférence ne sont pas implémentés. Pistes naturelles : notification e-mail à la réservation, espace parent pour gérer ses cours, scoring enrichi (affinité avec les retours d'élèves du même niveau), disponibilités récurrentes éditables par les tuteurs.
