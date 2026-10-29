@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tutoring_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tutoring
+      POSTGRES_USER: tutoring
+      POSTGRES_PASSWORD: tutoring
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tutoring -d tutoring"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db_data:
