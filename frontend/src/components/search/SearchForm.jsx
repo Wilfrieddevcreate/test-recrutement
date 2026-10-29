@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Button from '../ui/Button'
+import Field from '../ui/Field'
 import Icon from '../ui/Icon'
 import Skeleton from '../ui/Skeleton'
 import Section from './Section'
@@ -13,10 +14,13 @@ export default function SearchForm({ meta, initial, onSubmit }) {
   const [levelId, setLevelId] = useState(initial.level_id)
   const [cycle, setCycle] = useState(() => cycleOfLevel(meta, initial.level_id) ?? 'college')
   const [windows, setWindows] = useState(initial.windows)
+  const [childName, setChildName] = useState(initial.child_first_name ?? '')
 
   if (!meta) return <SearchFormSkeleton />
 
   const ready = Boolean(subjectId && levelId && windows.length > 0)
+  const name = childName.trim()
+  const child = name || 'votre enfant'
 
   const changeCycle = (next) => {
     setCycle(next)
@@ -26,7 +30,7 @@ export default function SearchForm({ meta, initial, onSubmit }) {
 
   const submit = (e) => {
     e.preventDefault()
-    if (ready) onSubmit({ subject_id: subjectId, level_id: levelId, windows })
+    if (ready) onSubmit({ subject_id: subjectId, level_id: levelId, windows, child_first_name: name })
   }
 
   return (
@@ -43,18 +47,35 @@ export default function SearchForm({ meta, initial, onSubmit }) {
         </p>
       </div>
 
+      {/* Facultatif : sert uniquement à personnaliser le parcours et à pré-remplir la réservation. */}
+      <Field
+        id="child-name"
+        className="mt-8 max-w-sm animate-fade-up stagger-1"
+        label={
+          <>
+            Prénom de votre enfant <span className="font-normal text-stone-400">(facultatif)</span>
+          </>
+        }
+        icon="user"
+        placeholder="Ex. Léa"
+        autoComplete="off"
+        maxLength={40}
+        value={childName}
+        onChange={(e) => setChildName(e.target.value)}
+      />
+
       <div className="mt-10 space-y-10">
         <Section number={1} title="Quelle matière ?">
           <SubjectPicker subjects={meta.subjects} value={subjectId} onChange={setSubjectId} />
         </Section>
 
-        <Section number={2} title="Quel niveau ?" hint="Choisissez le cycle, puis la classe de votre enfant.">
+        <Section number={2} title="Quel niveau ?" hint={`Choisissez le cycle, puis la classe de ${child}.`}>
           <LevelPicker cycles={meta.cycles} cycle={cycle} onCycleChange={changeCycle} value={levelId} onChange={setLevelId} />
         </Section>
 
         <Section
           number={3}
-          title="Quand est-il disponible ?"
+          title={`Quelles disponibilités pour ${child} ?`}
           hint="Cochez une ou plusieurs demi-journées. Plus vous en indiquez, plus vous aurez de choix."
         >
           <AvailabilityGrid weekdays={meta.weekdays} periods={meta.periods} value={windows} onChange={setWindows} />

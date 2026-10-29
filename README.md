@@ -74,7 +74,7 @@ Le parent exprime ses disponibilités en **demi-journées** (matin 8h–12h, apr
 ### Interface
 
 - **Un seul écran, trois temps**, sans rechargement : formulaire → résultats → confirmation, avec un panneau de réservation (modale sur ordinateur, bottom sheet sur mobile).
-- **Le moins de saisie possible** : matière et classe en pastilles, disponibilités dans une grille cliquable (transposée sur mobile pour des cases larges) avec des raccourcis (« Soirs de semaine », « Week-end »). L'identité n'est demandée qu'au moment de réserver : deux champs, mémorisés pour la fois suivante.
+- **Le moins de saisie possible** : matière et classe en pastilles, disponibilités dans une grille cliquable (transposée sur mobile pour des cases larges) avec des raccourcis (« Soirs de semaine », « Week-end »). Le prénom de l'enfant est facultatif : il personnalise le parcours (« 2 tuteurs pour Léa ») et pré-remplit la réservation, où seul l'e-mail reste à saisir. Les coordonnées sont mémorisées pour la fois suivante.
 - **Lisibilité des résultats** : meilleur match mis en avant, anneau de pertinence, atouts, créneaux groupés par jour, accès à toutes les disponibilités du tuteur.
 - **Fluidité** : squelettes de chargement, transitions d'apparition (désactivées si le système demande moins d'animations), états de bouton, mobile-first sans débordement dès 360px, bouton « retour » du navigateur qui ramène à l'étape précédente.
 - **Petit plus** : export iCalendar du cours réservé depuis l'écran de confirmation.

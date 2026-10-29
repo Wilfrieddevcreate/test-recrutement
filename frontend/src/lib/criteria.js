@@ -1,4 +1,4 @@
-export const EMPTY_CRITERIA = { subject_id: null, level_id: null, windows: [] }
+export const EMPTY_CRITERIA = { subject_id: null, level_id: null, windows: [], child_first_name: '' }
 
 export const windowKey = (w) => `${w.weekday}-${w.period}`
 

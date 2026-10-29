@@ -38,7 +38,8 @@ export const api = {
   meta: () => request('/meta'),
 
   /** Tuteurs compatibles, classés par pertinence, avec leurs créneaux correspondants. */
-  match: (criteria) => request('/match', { method: 'POST', body: criteria }).then((r) => r.data),
+  match: ({ subject_id, level_id, windows }) =>
+    request('/match', { method: 'POST', body: { subject_id, level_id, windows } }).then((r) => r.data),
 
   /** Tous les créneaux encore libres d'un tuteur. */
   availabilities: (tutorId) => request(`/tutors/${tutorId}/availabilities`).then((r) => r.data),

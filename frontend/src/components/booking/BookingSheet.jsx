@@ -29,7 +29,8 @@ function remember(values) {
 /** Dernière étape : deux champs, un bouton, et la réservation est confirmée. */
 export default function BookingSheet({ meta, criteria, tutor, slot, onClose, onBooked, onSlotTaken }) {
   const remembered = readRemembered()
-  const [childFirstName, setChildFirstName] = useState(remembered.childFirstName ?? '')
+  // Pré-rempli par le prénom saisi dans le formulaire, sinon par la dernière réservation.
+  const [childFirstName, setChildFirstName] = useState(criteria.child_first_name?.trim() || remembered.childFirstName || '')
   const [parentEmail, setParentEmail] = useState(remembered.parentEmail ?? '')
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -132,6 +133,7 @@ export default function BookingSheet({ meta, criteria, tutor, slot, onClose, onB
             inputMode="email"
             placeholder="vous@exemple.fr"
             autoComplete="email"
+            autoFocus={Boolean(childFirstName) && !parentEmail}
             value={parentEmail}
             onChange={(e) => setParentEmail(e.target.value)}
             error={errors.parentEmail}
