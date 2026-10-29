@@ -1,1 +1,81 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Neutres chauds */
+  --color-paper: #f7f6f2;
+  --color-ink: #17191f;
+
+  /* Couleur de marque : vert-sarcelle, réservée aux signaux positifs (pertinence, confirmation) */
+  --color-brand-50: #eefaf7;
+  --color-brand-100: #d5f2eb;
+  --color-brand-200: #ade4d8;
+  --color-brand-300: #78cfbf;
+  --color-brand-400: #43b3a1;
+  --color-brand-500: #249887;
+  --color-brand-600: #1a7c6e;
+  --color-brand-700: #17645a;
+  --color-brand-800: #165049;
+  --color-brand-900: #15423d;
+
+  --shadow-card: 0 1px 2px rgb(23 25 31 / 0.04), 0 10px 30px -14px rgb(23 25 31 / 0.14);
+  --shadow-card-hover: 0 2px 4px rgb(23 25 31 / 0.05), 0 18px 44px -18px rgb(23 25 31 / 0.22);
+  --shadow-sheet: 0 -8px 40px -12px rgb(23 25 31 / 0.25);
+
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-pop: pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-sheet-up: sheet-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-draw: draw 0.5s 0.3s ease-out both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sheet-up {
+    from { opacity: 0; transform: translateY(32px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes draw {
+    from { stroke-dashoffset: 40; }
+    to { stroke-dashoffset: 0; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-paper text-ink antialiased;
+    background-image: radial-gradient(70rem 32rem at 50% -12rem, rgb(36 152 135 / 0.12), transparent 70%);
+    background-repeat: no-repeat;
+  }
+  button, input {
+    font: inherit;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-paper;
+  }
+}
+
+/* Décalage d'apparition des éléments d'une liste : stagger-1, stagger-2, … */
+@utility stagger-* {
+  animation-delay: calc(--value(integer) * 70ms);
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
