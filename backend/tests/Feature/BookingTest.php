@@ -70,7 +70,9 @@ class BookingTest extends TestCase
         $payload = $this->payloadFor($slot);
 
         $this->postJson('/api/bookings', $payload)->assertCreated();
-        $this->postJson('/api/bookings', $payload)->assertStatus(409);
+        $this->postJson('/api/bookings', $payload)
+            ->assertStatus(409)
+            ->assertExactJson(['message' => "Ce créneau vient d'être réservé. Choisissez-en un autre."]);
 
         $this->assertDatabaseCount('bookings', 1);
     }

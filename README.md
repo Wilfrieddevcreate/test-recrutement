@@ -24,6 +24,7 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed        # schéma + 13 tuteurs fictifs avec créneaux sur 14 jours
+                                  # (relancer `php artisan db:seed` régénère les créneaux sans doublon)
 php artisan serve
 
 # 3. Interface — http://localhost:5173
@@ -58,11 +59,11 @@ cd backend && php artisan test
    | Critère | Poids | Normalisation |
    |---|---|---|
    | Créneaux compatibles avec les souhaits du parent | 35 | plafonné à 6 créneaux |
-   | Évaluations des élèves | 30 | note / 5 |
+   | Évaluations des élèves | 30 | note / 5, pondérée par la confiance (plafond 20 avis) |
    | Expérience | 20 | plafonnée à 10 ans |
    | Cours déjà donnés sur la plateforme | 15 | plafonnés à 300 |
 
-   Les poids et plafonds vivent dans `backend/config/matching.php` : la logique évolue sans toucher au code. Chaque résultat embarque des **atouts explicables** (« Noté 4,8/5 par 102 élèves », « 7 créneaux qui vous conviennent ») affichés sous forme de badges, pour que le parent comprenne le classement.
+   La pondération par la confiance évite qu'un 5/5 obtenu avec 3 avis passe devant un 4,9 obtenu avec 200 avis. Les poids et plafonds vivent dans `backend/config/matching.php` : la logique évolue sans toucher au code. Chaque résultat embarque des **atouts explicables** (« Très bien noté », « 7 créneaux pour vous ») affichés sous forme de badges, pour que le parent comprenne le classement.
 
 Le parent exprime ses disponibilités en **demi-journées** (matin 8h–12h, après-midi 12h–18h, soir 18h–21h) par jour de semaine : c'est ainsi qu'une famille raisonne, et le backend fait la correspondance avec les créneaux horaires concrets des 14 prochains jours.
 
@@ -75,7 +76,7 @@ Le parent exprime ses disponibilités en **demi-journées** (matin 8h–12h, apr
 - **Un seul écran, trois temps**, sans rechargement : formulaire → résultats → confirmation, avec un panneau de réservation (modale sur ordinateur, bottom sheet sur mobile).
 - **Le moins de saisie possible** : matière et classe en pastilles, disponibilités dans une grille cliquable (transposée sur mobile pour des cases larges) avec des raccourcis (« Soirs de semaine », « Week-end »). L'identité n'est demandée qu'au moment de réserver : deux champs, mémorisés pour la fois suivante.
 - **Lisibilité des résultats** : meilleur match mis en avant, anneau de pertinence, atouts, créneaux groupés par jour, accès à toutes les disponibilités du tuteur.
-- **Fluidité** : squelettes de chargement, transitions d'apparition, états de bouton, mobile-first sans débordement.
+- **Fluidité** : squelettes de chargement, transitions d'apparition (désactivées si le système demande moins d'animations), états de bouton, mobile-first sans débordement dès 360px, bouton « retour » du navigateur qui ramène à l'étape précédente.
 - **Petit plus** : export iCalendar du cours réservé depuis l'écran de confirmation.
 
 ### API
@@ -95,7 +96,7 @@ Les dates sont renvoyées en ISO 8601 avec le fuseau Europe/Paris, accompagnées
 
 ```
 backend/   API Laravel : app/Services/TutorMatcher.php (matching), app/Http/Controllers/Api,
-           database/seeders (13 tuteurs), tests/Feature (11 tests)
+           database/seeders (13 tuteurs), tests (16 tests : matching, réservation, scoring, seeder)
 frontend/  SPA React : src/components/{search,results,booking,ui,layout}, src/api/client.js
 docker-compose.yml   PostgreSQL 16
 ```

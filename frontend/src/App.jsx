@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from './api/client'
 import { useMeta } from './hooks/useMeta'
 import { EMPTY_CRITERIA } from './lib/criteria'
@@ -9,11 +9,15 @@ import ResultsView from './components/results/ResultsView'
 import BookingSheet from './components/booking/BookingSheet'
 import Confirmation from './components/booking/Confirmation'
 
-const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
+const scrollToTop = () => {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
+}
 
 /**
  * Parcours en trois temps, sur une seule page :
  * recherche → tuteurs compatibles → confirmation de réservation.
+ * Chaque étape est poussée dans l'historique du navigateur : « retour » ramène à l'étape précédente.
  */
 export default function App() {
   const { meta, error: metaError } = useMeta()
@@ -26,14 +30,11 @@ export default function App() {
   const [selection, setSelection] = useState(null) // { tutor, slot }
   const [booking, setBooking] = useState(null)
 
-  const runSearch = useCallback(async (nextCriteria) => {
-    setCriteria(nextCriteria)
-    setStep('results')
+  const fetchResults = useCallback(async (searchCriteria) => {
     setLoading(true)
     setSearchError(null)
-    scrollToTop()
     try {
-      setResults(await api.match(nextCriteria))
+      setResults(await api.match(searchCriteria))
     } catch (err) {
       setSearchError(err)
       setResults(null)
@@ -42,30 +43,59 @@ export default function App() {
     }
   }, [])
 
-  const editSearch = () => {
-    setStep('search')
+  const navigate = (nextStep) => {
+    window.history.pushState({ step: nextStep }, '')
+    setStep(nextStep)
     scrollToTop()
   }
+
+  // Étape initiale dans l'historique, puis écoute du bouton « retour » / « suivant ».
+  useEffect(() => {
+    if (!window.history.state?.step) window.history.replaceState({ step: 'search' }, '')
+
+    const onPopState = (event) => {
+      const target = event.state?.step ?? 'search'
+      setSelection(null)
+      if (target === 'results' && criteria.subject_id) {
+        setStep('results')
+        fetchResults(criteria) // les disponibilités ont pu changer entre-temps
+      } else if (target === 'confirmed' && booking) {
+        setStep('confirmed')
+      } else {
+        setStep('search')
+      }
+      scrollToTop()
+    }
+
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [criteria, booking, fetchResults])
+
+  const runSearch = (nextCriteria) => {
+    setCriteria(nextCriteria)
+    navigate('results')
+    fetchResults(nextCriteria)
+  }
+
+  const editSearch = () => navigate('search')
 
   const startOver = () => {
     setBooking(null)
     setResults(null)
     setCriteria(EMPTY_CRITERIA)
-    setStep('search')
-    scrollToTop()
+    navigate('search')
   }
 
   const handleBooked = (confirmed) => {
     setBooking(confirmed)
     setSelection(null)
-    setStep('confirmed')
-    scrollToTop()
+    navigate('confirmed')
   }
 
-  // Le créneau a été pris entre-temps : on relance la recherche pour rafraîchir les disponibilités.
+  // Le créneau a été pris entre-temps : on rafraîchit les disponibilités.
   const handleSlotTaken = () => {
     setSelection(null)
-    runSearch(criteria)
+    fetchResults(criteria)
   }
 
   return (
@@ -93,7 +123,7 @@ export default function App() {
             loading={loading}
             error={searchError}
             onEdit={editSearch}
-            onRetry={() => runSearch(criteria)}
+            onRetry={() => fetchResults(criteria)}
             onSelectSlot={(tutor, slot) => setSelection({ tutor, slot })}
           />
         )}

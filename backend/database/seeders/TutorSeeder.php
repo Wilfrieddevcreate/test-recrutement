@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\Period;
 use App\Models\AvailabilitySlot;
+use App\Models\Booking;
 use App\Models\Level;
 use App\Models\Subject;
 use App\Models\Tutor;
@@ -18,6 +19,9 @@ use Illuminate\Support\Str;
  * Les disponibilités sont décrites comme un rythme hebdomadaire (jour ISO 1-7 + période)
  * puis matérialisées en créneaux datés d'une heure sur les prochains jours, afin que
  * la réservation porte sur un créneau concret qui disparaît une fois pris.
+ *
+ * Relançable sans doublon : chaque exécution repart de zéro (tuteurs, offres, créneaux,
+ * et donc réservations) et régénère les créneaux à partir de la date du jour.
  */
 class TutorSeeder extends Seeder
 {
@@ -25,6 +29,8 @@ class TutorSeeder extends Seeder
 
     public function run(): void
     {
+        $this->reset();
+
         $subjects = Subject::pluck('id', 'slug');
         $levelsByCycle = Level::all()->groupBy('cycle')->map->pluck('id', 'slug');
         $horizon = (int) config('matching.horizon_days');
@@ -83,6 +89,15 @@ class TutorSeeder extends Seeder
             }
             AvailabilitySlot::insert($slots);
         }
+    }
+
+    /** Supprime les données dépendantes dans l'ordre des clés étrangères. */
+    private function reset(): void
+    {
+        Booking::query()->delete();
+        AvailabilitySlot::query()->delete();
+        DB::table('tutor_subject_level')->delete();
+        Tutor::query()->delete();
     }
 
     /**

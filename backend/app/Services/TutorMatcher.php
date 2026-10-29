@@ -82,9 +82,12 @@ final class TutorMatcher
         $weights = config('matching.weights');
         $caps = config('matching.caps');
 
+        // La note est pondérée par un indice de confiance : 5/5 avec 3 avis vaut moins que 4,9 avec 200 avis.
+        $confidence = $this->ratio($tutor->reviews_count, $caps['reviews']);
+
         $components = [
             'availability' => $this->ratio($matchingSlotsCount, $caps['availability']),
-            'rating' => $this->ratio($tutor->rating, 5),
+            'rating' => $this->ratio($tutor->rating, 5) * $confidence,
             'experience' => $this->ratio($tutor->years_experience, $caps['experience']),
             'lessons' => $this->ratio($tutor->lessons_count, $caps['lessons']),
         ];
@@ -98,7 +101,9 @@ final class TutorMatcher
     }
 
     /**
-     * Arguments courts et concrets expliquant le classement, affichés sous forme de badges.
+     * Atouts qualitatifs expliquant le classement, affichés sous forme de badges.
+     * Les chiffres bruts (note, expérience, cours) étant déjà visibles sur la carte,
+     * on ne les répète pas ici.
      *
      * @return array<int, string>
      */
@@ -107,22 +112,18 @@ final class TutorMatcher
         $reasons = [];
 
         if ($tutor->rating >= 4.8 && $tutor->reviews_count >= 30) {
-            $reasons[] = sprintf('Noté %s/5 par %d élèves', number_format($tutor->rating, 1, ',', ''), $tutor->reviews_count);
+            $reasons[] = 'Très bien noté';
         }
 
         if ($tutor->years_experience >= 8) {
-            $reasons[] = sprintf("%d ans d'expérience", $tutor->years_experience);
+            $reasons[] = 'Très expérimenté';
         }
 
         if ($slots->count() >= 3) {
-            $reasons[] = sprintf('%d créneaux qui vous conviennent', $slots->count());
+            $reasons[] = sprintf('%d créneaux pour vous', $slots->count());
         }
 
-        if ($tutor->lessons_count >= 300) {
-            $reasons[] = sprintf('Plus de %d cours donnés', (int) floor($tutor->lessons_count / 100) * 100);
-        }
-
-        return array_slice($reasons, 0, 3);
+        return $reasons;
     }
 
     private function ratio(float|int $value, float|int $cap): float

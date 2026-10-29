@@ -7,12 +7,14 @@ export default function SearchSummary({ criteria, meta, onEdit }) {
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-2 pl-4 shadow-card sm:p-3 sm:pl-4">
-      <p className="min-w-0 flex-1 truncate text-sm" title={`${subject} · ${level} · ${windows.join(', ')}`}>
-        <span className="font-semibold text-ink">{subject}</span>
-        <span className="mx-1.5 text-stone-300">·</span>
-        <span className="font-semibold text-ink">{level}</span>
-        <span className="mx-1.5 text-stone-300">·</span>
-        <span className="text-stone-600">{windows.join(', ')}</span>
+      <p className="min-w-0 flex-1 text-sm sm:flex sm:items-center" title={`${subject} · ${level} · ${windows.join(', ')}`}>
+        <span className="block truncate">
+          <span className="font-semibold text-ink">{subject}</span>
+          <span className="mx-1.5 text-stone-300">·</span>
+          <span className="font-semibold text-ink">{level}</span>
+        </span>
+        <span className="hidden text-stone-300 sm:mx-1.5 sm:inline">·</span>
+        <span className="block truncate text-stone-600">{windows.join(', ')}</span>
       </p>
       <button
         type="button"

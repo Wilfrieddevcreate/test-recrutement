@@ -26,5 +26,6 @@ return [
         'availability' => 6,
         'experience' => 10,
         'lessons' => 300,
+        'reviews' => 20, // au-delà, la note est considérée comme pleinement fiable
     ],
 ];

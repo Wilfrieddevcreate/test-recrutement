@@ -9,6 +9,7 @@ use App\Models\AvailabilitySlot;
 use App\Models\Booking;
 use App\Models\Tutor;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -28,7 +29,7 @@ class BookingController extends Controller
                 $slot = AvailabilitySlot::whereKey($data['slot_id'])->lockForUpdate()->firstOrFail();
 
                 if ($slot->is_booked || $slot->starts_at->isPast()) {
-                    abort(409, "Ce créneau vient d'être réservé. Choisissez-en un autre.");
+                    $this->fail(409, "Ce créneau vient d'être réservé. Choisissez-en un autre.");
                 }
 
                 $teaches = Tutor::whereKey($slot->tutor_id)
@@ -36,7 +37,7 @@ class BookingController extends Controller
                     ->exists();
 
                 if (! $teaches) {
-                    abort(422, "Ce tuteur n'enseigne pas cette matière à ce niveau.");
+                    $this->fail(422, "Ce tuteur n'enseigne pas cette matière à ce niveau.");
                 }
 
                 $slot->update(['is_booked' => true]);
@@ -51,12 +52,18 @@ class BookingController extends Controller
                 ]);
             });
         } catch (UniqueConstraintViolationException) {
-            abort(409, "Ce créneau vient d'être réservé. Choisissez-en un autre.");
+            $this->fail(409, "Ce créneau vient d'être réservé. Choisissez-en un autre.");
         }
 
         return (new BookingResource($booking->load(['tutor', 'slot', 'subject', 'level'])))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /** Réponse d'erreur JSON minimale ({"message": …}), sans trace même en mode debug. */
+    private function fail(int $status, string $message): never
+    {
+        throw new HttpResponseException(response()->json(['message' => $message], $status));
     }
 
     /** Consultation d'une réservation par sa référence (lien de confirmation). */
