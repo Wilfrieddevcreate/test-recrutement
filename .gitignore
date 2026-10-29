@@ -6,3 +6,7 @@
 Thumbs.db
 .idea/
 .vscode/
+
+# Vidéo de démonstration (hébergée sur Loom, lien dans le README)
+*.mp4
+*.webm

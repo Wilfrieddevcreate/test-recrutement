@@ -11,6 +11,11 @@ Parcours parent : **matière + niveau + disponibilités → tuteurs classés par
 | Base de données | PostgreSQL 16 |
 | Lancement | Docker Compose (pile complète) ou natif |
 
+## Démonstration
+
+Vidéo du parcours complet (recherche, tuteurs classés, réservation, confirmation) :
+**https://www.loom.com/share/1dd443fc8f89424aaef90dc9bcb99d7f**
+
 ## Installation et lancement
 
 ### Option 1 : tout en Docker (recommandé pour tester)
